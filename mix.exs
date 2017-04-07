@@ -32,6 +32,7 @@ defmodule Exon.Mixfile do
   defp deps do
     [
       {:ecto, "~> 2.1"},
+      {:mex, "~> 0.0.5"},
     ]
   end
 
