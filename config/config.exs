@@ -1,8 +1,11 @@
 use Mix.Config
 
-config :exon, Exon.TestApp.EctoRepo,
+config :exon, ecto_repos: [TodoApp.Repo]
+
+config :exon, TodoApp.Repo,
   adapter: Ecto.Adapters.Postgres,
-  database: "exon_test_app",
+  priv: "priv/todo_app/repo",
+  database: "exon_todo_app",
   hostname: "localhost",
   username: "postgres",
   password: "postgres"

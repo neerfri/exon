@@ -32,7 +32,7 @@ defmodule Exon.Mixfile do
   defp deps do
     [
       {:ecto, "~> 2.1"},
-      {:mex, "~> 0.0.5"},
+      {:postgrex, ">= 0.13.2", only: :test},
     ]
   end
 
