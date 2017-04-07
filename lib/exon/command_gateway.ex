@@ -3,6 +3,7 @@ defmodule Exon.CommandGateway do
     quote bind_quoted: [opts: opts] do
       import Exon.CommandGateway
       @repo opts[:repo]
+      @event_bus opts[:event_bus]
     end
   end
 
@@ -16,22 +17,27 @@ defmodule Exon.CommandGateway do
             unquote(name),
             payload,
             unquote(spec),
-            @repo
+            @repo,
+            @event_bus
             )
         end
       end)
     end
   end
 
-  def execute(aggregate_module, command_name, payload, spec, repo) do
+  def execute(aggregate_module, command_name, payload, spec, repo, event_bus) do
     aggregate = get_aggregate(aggregate_module, payload, spec, repo)
     case apply(aggregate_module, command_name, [aggregate, payload]) do
       :ok -> :ok
       {:ok, changeset} ->
         repo.insert_or_update(changeset)
       {:ok, changeset, events} ->
-        repo.insert_or_update(changeset)
-        IO.puts "publish events: #{inspect(events)}"
+        case repo.insert_or_update(changeset) do
+          {:ok, aggregate} ->
+            event_bus.publish(events)
+            {:ok, aggregate}
+          other -> other
+        end
     end
   end
 

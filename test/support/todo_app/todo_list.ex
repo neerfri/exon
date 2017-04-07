@@ -14,8 +14,8 @@ defmodule TodoApp.TodoList do
   def create_todo_list(%TodoList{} = list, %{list_uuid: list_uuid, name: name}) do
     {
       :ok,
-      change(list, %{uuid: list_uuid, name: name}),
-      [{:todo_list_created, %{list_uuid: list_uuid, name: name}}]
+      changeset(list, %{uuid: list_uuid, name: name}),
+      [todo_list_created: %{list_uuid: list_uuid, name: name}]
     }
   end
 
@@ -28,8 +28,13 @@ defmodule TodoApp.TodoList do
     {
       :ok,
       change(list, %{archived: true}),
-      [{:todo_list_archived, %{list_uuid: list_uuid}}]
+      [todo_list_archived: %{list_uuid: list_uuid}]
     }
+  end
+
+  def changeset(model, changes) do
+    change(model, changes)
+    |> validate_required([:uuid, :name])
   end
 
   def get(uuid) do
