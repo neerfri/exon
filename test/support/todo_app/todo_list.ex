@@ -32,6 +32,14 @@ defmodule TodoApp.TodoList do
     }
   end
 
+  @command []
+  def restore_todo_list(%TodoList{} = list, %{list_uuid: _list_uuid}) do
+    {
+      :ok,
+      change(list, %{archived: false})
+    }
+  end
+
   def changeset(model, changes) do
     change(model, changes)
     |> validate_required([:uuid, :name])
