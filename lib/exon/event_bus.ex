@@ -26,7 +26,7 @@ defmodule Exon.EventBus do
   def start_link(name, handlers) do
     import Supervisor.Spec
     handlers
-    |> Enum.map(fn(handler) -> worker(Exon.EventHandler.Server, [handler]) end)
+    |> Enum.map(fn(handler) -> worker(Exon.EventHandler.Server, [handler], id: handler) end)
     |> Supervisor.start_link([strategy: :one_for_one, name: name])
   end
 
