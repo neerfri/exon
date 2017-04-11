@@ -6,6 +6,7 @@ defmodule Exon.EventHandler.Server do
   end
 
   def init(handler) do
+    Code.ensure_loaded(handler)
     {:ok, %{handler: handler}}
   end
 

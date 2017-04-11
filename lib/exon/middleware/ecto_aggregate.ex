@@ -34,7 +34,7 @@ defmodule Exon.Middleware.EctoAggregate do
   end
 
   defp ecto_aggregate?(module) do
-    function_exported?(module, :__schema__, 1)
+    Code.ensure_loaded?(module) && function_exported?(module, :__schema__, 1)
   end
 
   defp get_aggregate(aggregate_module, payload, spec, repo) do

@@ -34,11 +34,20 @@ defmodule Exon.CommandGateway do
   end
 
   def execute(middlewares, aggregate_module, command_name, payload, context, spec) do
+    ensure_middleware_modules_loaded!(middlewares)
     env(aggregate_module, command_name, payload, context, spec)
     |> before_dispatch(middlewares)
     |> dispatch()
     |> after_dispatch(middlewares)
     |> Map.get(:result)
+  end
+
+  defp ensure_middleware_modules_loaded!(middlewares) do
+    Enum.each(middlewares, fn({middleware, _}) ->
+      unless Code.ensure_loaded?(middleware) do
+        raise ArgumentError, "Middleware #{inspect(middleware)} is not loaded"
+      end
+    end)
   end
 
   defp dispatch(env) do
