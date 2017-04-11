@@ -2,11 +2,10 @@ defmodule Exon.CommandGateway do
   alias Exon.Command.Env
   require Logger
 
-  defmacro __using__(opts) do
-    quote bind_quoted: [opts: opts] do
+  defmacro __using__(_opts) do
+    quote do
       import Exon.CommandGateway, only: [commands_from: 1, middleware: 1, middleware: 2]
       Module.register_attribute(__MODULE__, :middlewares, accumulate: true)
-      @gateway_opts opts
     end
   end
 
