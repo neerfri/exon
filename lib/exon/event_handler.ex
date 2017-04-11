@@ -7,7 +7,7 @@ defmodule Exon.EventHandler do
 
   defmacro __before_compile__(_env) do
     quote do
-      def handle_event(_, _), do: :ok
+      def handle_event(_name, _payload, _context), do: :ok
     end
   end
 end
