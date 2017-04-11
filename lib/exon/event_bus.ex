@@ -24,23 +24,22 @@ defmodule Exon.EventBus do
   end
 
   def start_link(name, handlers) do
-    GenServer.start_link(__MODULE__, handlers, name: name)
+    import Supervisor.Spec
+    handlers
+    |> Enum.map(fn(handler) -> worker(Exon.EventHandler.Server, [handler]) end)
+    |> Supervisor.start_link([strategy: :one_for_one, name: name])
   end
 
   def publish(pid, events, context) do
-    GenServer.call(pid, {:publish, List.wrap(events), context})
+    Supervisor.which_children(pid)
+    |> Enum.each(fn({_, pid, _, _}) ->
+      Enum.each(List.wrap(events), fn({event, payload}) ->
+        Exon.EventHandler.Server.publish(pid, event, payload, context)
+      end)
+    end)
   end
 
   def init(handlers) do
     {:ok, %{handlers: handlers}}
-  end
-
-  def handle_call({:publish, events, context}, _from, %{handlers: handlers} = state) when is_list(events) do
-    Enum.each(events, fn({name, payload}) ->
-      Enum.each(handlers, fn(handler) ->
-        apply(handler, :handle_event, [name, payload, context])
-      end)
-    end)
-    {:reply, :ok, state}
   end
 end
