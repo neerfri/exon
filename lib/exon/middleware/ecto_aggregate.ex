@@ -19,10 +19,17 @@ defmodule Exon.Middleware.EctoAggregate do
       case result do
         :ok -> env
         {:ok, %Ecto.Changeset{} = changeset} ->
-          %{env | result: put_elem(result, 1, repo.insert_or_update(changeset))}
+          %{env | result: save_and_alter_result(result, changeset, repo)}
         {:ok, changeset, _} ->
-          %{env | result: put_elem(result, 1, repo.insert_or_update(changeset))}
+          %{env | result: save_and_alter_result(result, changeset, repo)}
       end
+    end
+  end
+
+  defp save_and_alter_result(result, changeset, repo) do
+    case repo.insert_or_update(changeset) do
+      {:ok, aggregate} -> put_elem(result, 1, aggregate)
+      {:error, changeset} -> {:error, changeset}
     end
   end
 
