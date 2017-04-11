@@ -1,5 +1,5 @@
 defmodule Exon do
   @moduledoc """
-  Exon - a data application framework
+  Exon - A collection of useful concepts for building DDD (Domain-Driven-Design) applications in Elixir
   """
 end

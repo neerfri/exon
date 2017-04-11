@@ -14,7 +14,7 @@ defmodule Exon.Middleware.ExonEventBus do
         else
           env
         end
-      other -> env
+      _other -> env
     end
   end
 end

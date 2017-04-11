@@ -8,6 +8,9 @@ defmodule Exon.Mixfile do
      elixirc_paths: elixirc_paths(Mix.env),
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
+     description: description(),
+     package: package(),
+     docs: docs(),
      deps: deps()]
   end
 
@@ -32,7 +35,30 @@ defmodule Exon.Mixfile do
   defp deps do
     [
       {:ecto, "~> 2.1"},
+      {:ex_doc, ">= 0.0.0", only: :dev},
       {:postgrex, ">= 0.13.2", only: :test},
+    ]
+  end
+
+  defp description do
+    """
+    A collection of useful concepts for building DDD (Domain-Driven-Design) applications in Elixir
+    """
+  end
+
+  defp package() do
+    [
+      maintainers: ["Neer Friedman"],
+      licenses: ["MIT"],
+      files: ~w(mix.exs README.md lib),
+      links: %{"GitHub" => "https://github.com/neerfri/exon"}
+    ]
+  end
+
+  defp docs() do
+    [
+      main: "readme",
+      extras: ["README.md"],
     ]
   end
 
