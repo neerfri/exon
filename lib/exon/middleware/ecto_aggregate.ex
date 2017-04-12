@@ -17,11 +17,11 @@ defmodule Exon.Middleware.EctoAggregate do
   def after_dispatch(%Env{module: module, result: result} = env, %{repo: repo}) do
     if ecto_aggregate?(module) do
       case result do
-        :ok -> env
         {:ok, %Ecto.Changeset{} = changeset} ->
           %{env | result: save_and_alter_result(result, changeset, repo)}
-        {:ok, changeset, _} ->
+        {:ok, %Ecto.Changeset{} = changeset, _} ->
           %{env | result: save_and_alter_result(result, changeset, repo)}
+        _other -> env
       end
     end
   end
