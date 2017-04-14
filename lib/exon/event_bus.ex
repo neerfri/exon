@@ -1,45 +1,38 @@
 defmodule Exon.EventBus do
-  defmacro __using__(_opts) do
-    quote do
-      import Exon.EventBus, only: [register: 1]
-      Module.register_attribute(__MODULE__, :handlers, accumulate: true)
-      @before_compile unquote(__MODULE__)
-      def start_link, do: Exon.EventBus.start_link(__MODULE__, __handlers__())
-      def publish(events, context), do: Exon.EventBus.publish(__MODULE__, events, context)
+  @moduledoc """
+  An event bus behaviour and convenience macro.
+
+  Use `Exon.EventBus` to define an event bus for your application.
+  You can either use: `use Exon.EventBus, :sync` or `use Exon.EventBus, :async`.
+  """
+
+  @type event :: {atom, map}
+  @type events :: [event]
+  @type context :: map
+
+  @callback publish(events, context) :: :ok
+  @callback child_spec() :: Supervisor.Spec.spec
+
+  defmacro __using__([]) do
+    apply(Exon.EventBus.Sync, :__using__, [[]])
+  end
+
+  defmacro __using__(:sync) do
+    apply(Exon.EventBus.Sync, :__using__, [[]])
+  end
+
+  defmacro __using__(:async) do
+    apply(Exon.EventBus.Async, :__using__, [[]])
+  end
+
+  @doc "A shared utility function to apply the event handling method on a handler"
+  def handle_event(handler, event, payload, context) do
+    Code.ensure_loaded(handler)
+    cond do
+      function_exported?(handler, event, 2) -> apply(handler, event, [payload, context])
+      function_exported?(handler, event, 1) -> apply(handler, event, [payload])
+      function_exported?(handler, :handle_event, 3) -> apply(handler, :handle_event, [event, payload, context])
+      true -> :ok
     end
-  end
-
-  defmacro register(handler) do
-    quote do
-      @handlers unquote(handler)
-    end
-  end
-
-  defmacro __before_compile__(_env) do
-    quote do
-      def __handlers__() do
-        @handlers
-      end
-    end
-  end
-
-  def start_link(name, handlers) do
-    import Supervisor.Spec
-    handlers
-    |> Enum.map(fn(handler) -> worker(Exon.EventHandler.Server, [handler], id: handler) end)
-    |> Supervisor.start_link([strategy: :one_for_one, name: name])
-  end
-
-  def publish(pid, events, context) do
-    Supervisor.which_children(pid)
-    |> Enum.each(fn({_, pid, _, _}) ->
-      Enum.each(List.wrap(events), fn({event, payload}) ->
-        Exon.EventHandler.Server.publish(pid, event, payload, context)
-      end)
-    end)
-  end
-
-  def init(handlers) do
-    {:ok, %{handlers: handlers}}
   end
 end
