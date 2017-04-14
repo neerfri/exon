@@ -1,4 +1,4 @@
-# Exon
+# Exon [![hex.pm](http://img.shields.io/hexpm/v/exon.svg?style=flat)](https://hex.pm/packages/exon)
 
 A collection of useful concepts for building data backed applications in Elixir
 
