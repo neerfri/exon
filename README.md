@@ -43,19 +43,14 @@ mechanism using the `@command` method annotation.
 ### Event Bus
 
 A module responsible for publishing domain events to it's registered event handlers.
-An event bus should `use Exon.EventBus` which provides a supervisor based publisher
-and the `register` macro to register event handlers.
+An event bus should `use Exon.EventBus` which provides a GenServer based publisher
+and the `add_handler` function to add event handlers.
 
 ### Event handler
 
 A module responsible of domain logic that should be executed when a specific domain
 event is raised.
 An event handler can handle zero or more domain events.
-An event will can be handled in one of three ways (searched in that order):
-
-1. `def my_domain_event(payload, context)`
-1. `def my_domain_event(payload)`
-1. `def handle_event(event, payload, context)`
 
 ### Middleware
 
