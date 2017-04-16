@@ -3,7 +3,8 @@ defmodule TodoApp.Supervisor do
     import Supervisor.Spec
     children = [
       supervisor(TodoApp.Repo, []),
-      TodoApp.EventBus.child_spec
+      worker(TodoApp.EventBus, []),
+      worker(TodoApp.EventHandler, [[event_bus: TodoApp.EventBus]])
     ]
     Supervisor.start_link(children, strategy: :one_for_one)
   end

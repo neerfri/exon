@@ -1,38 +1,40 @@
 defmodule Exon.EventBus do
-  @moduledoc """
-  An event bus behaviour and convenience macro.
+  defmacro __using__(_opts) do
+    quote do
+      use GenServer
+      @name __MODULE__
 
-  Use `Exon.EventBus` to define an event bus for your application.
-  You can either use: `use Exon.EventBus, :sync` or `use Exon.EventBus, :async`.
-  """
-
-  @type event :: {atom, map}
-  @type events :: [event]
-  @type context :: map
-
-  @callback publish(events, context) :: :ok
-  @callback child_spec() :: Supervisor.Spec.spec
-
-  defmacro __using__([]) do
-    apply(Exon.EventBus.Sync, :__using__, [[]])
+      def start_link(), do: GenServer.start_link(unquote(__MODULE__), :ok, name: @name)
+      def add_handler(handler), do: GenServer.call(@name, {:add_handler, handler})
+      def publish(events, context), do: GenServer.call(@name, {:publish, events, context})
+    end
   end
 
-  defmacro __using__(:sync) do
-    apply(Exon.EventBus.Sync, :__using__, [[]])
+  def init(_) do
+    {:ok, %{handlers: MapSet.new}}
   end
 
-  defmacro __using__(:async) do
-    apply(Exon.EventBus.Async, :__using__, [[]])
+  def handle_call({:publish, events, context}, _from, %{handlers: handlers} = state) do
+    handlers
+    |> Enum.map(&call_handler_task(&1, events, context))
+    |> Enum.map(&Task.async/1)
+    |> Enum.map(&Task.await/1)
+    {:reply, :ok, state}
   end
 
-  @doc "A shared utility function to apply the event handling method on a handler"
-  def handle_event(handler, event, payload, context) do
-    Code.ensure_loaded(handler)
-    cond do
-      function_exported?(handler, event, 2) -> apply(handler, event, [payload, context])
-      function_exported?(handler, event, 1) -> apply(handler, event, [payload])
-      function_exported?(handler, :handle_event, 3) -> apply(handler, :handle_event, [event, payload, context])
-      true -> :ok
+  def handle_call({:add_handler, handler}, _from, %{handlers: handlers} = state) do
+    {:reply, :ok, %{state | handlers: MapSet.put(handlers, handler)}}
+  end
+
+  def handle_call({:handlers}, _from, %{handlers: handlers} = state) do
+    {:reply, Enum.into(handlers, []), state}
+  end
+
+  defp call_handler_task(handler, events, context) do
+    fn() ->
+      Enum.each(events, fn({name, payload}) ->
+        handler.__handle_event__(name, payload, context)
+      end)
     end
   end
 end
