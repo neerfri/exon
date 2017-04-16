@@ -23,6 +23,8 @@ defmodule Exon.Middleware.EctoAggregate do
           %{env | result: save_and_alter_result(result, changeset, repo)}
         _other -> env
       end
+    else
+      env
     end
   end
 
