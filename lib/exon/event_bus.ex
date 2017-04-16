@@ -1,33 +1,26 @@
 defmodule Exon.EventBus do
   defmacro __using__(_opts) do
     quote do
-      use GenServer
       @name __MODULE__
+      @agent __MODULE__.Agent
 
-      def start_link(), do: GenServer.start_link(unquote(__MODULE__), :ok, name: @name)
-      def add_handler(handler), do: GenServer.call(@name, {:add_handler, handler})
-      def publish(events, context), do: GenServer.call(@name, {:publish, events, context})
+      def start_link(handlers),
+        do: Agent.start_link(fn -> MapSet.new(handlers) end, name: @agent)
+      def handlers(),
+        do: Agent.get(@agent, &(&1))
+      def add_handler(handler),
+        do: Agent.update(@agent, &MapSet.put(&1, handler))
+      def publish(events, context),
+        do: unquote(__MODULE__).publish(handlers(), events, context)
     end
   end
 
-  def init(_) do
-    {:ok, %{handlers: MapSet.new}}
-  end
-
-  def handle_call({:publish, events, context}, _from, %{handlers: handlers} = state) do
+  def publish(handlers, events, context) do
     handlers
     |> Enum.map(&call_handler_task(&1, events, context))
     |> Enum.map(&Task.async/1)
     |> Enum.map(&Task.await/1)
-    {:reply, :ok, state}
-  end
-
-  def handle_call({:add_handler, handler}, _from, %{handlers: handlers} = state) do
-    {:reply, :ok, %{state | handlers: MapSet.put(handlers, handler)}}
-  end
-
-  def handle_call({:handlers}, _from, %{handlers: handlers} = state) do
-    {:reply, Enum.into(handlers, []), state}
+    :ok
   end
 
   defp call_handler_task(handler, events, context) do
