@@ -1,5 +1,5 @@
 defmodule Exon.CommandGateway do
-  alias Exon.Command.Env
+  alias Exon.Command
   require Logger
 
   defmacro __using__(_opts) do
@@ -35,7 +35,7 @@ defmodule Exon.CommandGateway do
 
   def execute(middlewares, aggregate_module, command_name, payload, context, spec) do
     ensure_middleware_modules_loaded!(middlewares)
-    env(aggregate_module, command_name, payload, context, spec)
+    Exon.Command.new(aggregate_module, command_name, payload, context, spec)
     |> before_dispatch(middlewares)
     |> dispatch()
     |> after_dispatch(middlewares)
@@ -50,40 +50,36 @@ defmodule Exon.CommandGateway do
     end)
   end
 
-  defp dispatch(env) do
-    %{env | result: apply(env.module, env.func, env.args)}
+  defp dispatch(%{module: module, func: func} = command) do
+    apply_and_ensure_command(module, func, [command])
   end
 
-  defp before_dispatch(env, middlewares) do
-    Enum.reduce_while(middlewares, env, fn({middleware, opts}, env) ->
+  defp before_dispatch(command, middlewares) do
+    Enum.reduce_while(middlewares, command, fn({middleware, opts}, command) ->
       if function_exported?(middleware, :before_dispatch, 2) do
-        Logger.debug("Running #{inspect(middleware)}.before_dispatch for #{env.func}")
-        {:cont, apply(middleware, :before_dispatch, [env, opts])}
+        Logger.debug("Running #{inspect(middleware)}.before_dispatch for #{command.func}")
+        {:cont, apply_and_ensure_command(middleware, :before_dispatch, [command, opts])}
       else
-        {:cont, env}
+        {:cont, command}
       end
     end)
   end
 
-  defp after_dispatch(env, middlewares) do
-    Enum.reduce(middlewares, env, fn({middleware, opts}, env) ->
+  defp after_dispatch(command, middlewares) do
+    Enum.reduce(middlewares, command, fn({middleware, opts}, command) ->
       if function_exported?(middleware, :after_dispatch, 2) do
-        Logger.debug("Running #{inspect(middleware)}.after_dispatch for #{env.func}")
-        apply(middleware, :after_dispatch, [env, opts])
+        Logger.debug("Running #{inspect(middleware)}.after_dispatch for #{command.func}")
+        apply_and_ensure_command(middleware, :after_dispatch, [command, opts])
       else
-        env
+        command
       end
     end)
   end
 
-  defp env(module, func, payload, context, spec) do
-    %Env{
-      module: module,
-      func: func,
-      args: [payload],
-      payload: payload,
-      context: context,
-      spec: spec,
-    }
+  defp apply_and_ensure_command(module, func, args) do
+    case apply(module, func, args) do
+      %Command{} = command -> command
+      other -> raise("Bad return value from #{inspect(module)}.#{func}: #{inspect(other)}")
+    end
   end
 end

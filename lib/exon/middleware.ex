@@ -1,7 +1,7 @@
 defmodule Exon.Middleware do
   defmacro __using__(_opts) do
     quote do
-      alias Exon.Command.Env
+      alias Exon.Command
       @behaviour Exon.Middleware
     end
   end

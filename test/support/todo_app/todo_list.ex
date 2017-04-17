@@ -1,8 +1,15 @@
 defmodule TodoApp.TodoList do
   use Exon.AggregateRoot, default_aggregate_id: :list_uuid
   use Ecto.Schema
-  import Ecto.Changeset
+
   alias __MODULE__, as: TodoList
+  alias Exon.Command
+
+  import Ecto.Changeset
+  import Exon.Ecto.AggregateMiddleware, only: [put_changeset: 2]
+  import Exon.EventBus.Middleware, only: [put_event: 2]
+  import Exon.Command, only: [put_result: 2]
+
 
   schema "todo_lists" do
     field :uuid
@@ -11,33 +18,27 @@ defmodule TodoApp.TodoList do
   end
 
   @command new: true
-  def create_todo_list(%TodoList{} = list, %{list_uuid: list_uuid, name: name}) do
-    {
-      :ok,
-      changeset(list, %{uuid: list_uuid, name: name}),
-      [todo_list_created: %{list_uuid: list_uuid, name: name}]
-    }
+  def create_todo_list(%Command{aggregate: list, payload: %{list_uuid: list_uuid, name: name}} = command) do
+    command
+    |> put_changeset(changeset(list, %{uuid: list_uuid, name: name}))
+    |> put_event(todo_list_created: %{list_uuid: list_uuid, name: name})
   end
 
   @command []
-  def archive_todo_list(%TodoList{archived: true}, %{}) do
-    :ok
+  def archive_todo_list(%Command{aggregate: %TodoList{archived: true} = list} = command) do
+    put_result(command, {:ok, list})
   end
 
-  def archive_todo_list(%TodoList{} = list, %{list_uuid: list_uuid}) do
-    {
-      :ok,
-      change(list, %{archived: true}),
-      [todo_list_archived: %{list_uuid: list_uuid}]
-    }
+  def archive_todo_list(%Command{aggregate: %TodoList{} = list} = command) do
+    command
+    |> put_changeset(change(list, %{archived: true}))
+    |> put_event(todo_list_archived: %{list_uuid: list.uuid})
   end
 
   @command []
-  def restore_todo_list(%TodoList{} = list, %{list_uuid: _list_uuid}) do
-    {
-      :ok,
-      change(list, %{archived: false})
-    }
+  def restore_todo_list(%Command{aggregate: %TodoList{} = list} = command) do
+    command
+    |> put_changeset(change(list, %{archived: false}))
   end
 
   def changeset(model, changes) do

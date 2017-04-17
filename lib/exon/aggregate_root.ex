@@ -2,6 +2,7 @@ defmodule Exon.AggregateRoot do
   defmacro __using__(opts) do
     quote do
       opts = unquote(opts)
+      alias Exon.Command
       import unquote(__MODULE__)
       Module.register_attribute(__MODULE__, :commands, accumulate: true)
       @on_definition {unquote(__MODULE__), :on_definition}
