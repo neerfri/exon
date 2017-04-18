@@ -15,7 +15,7 @@ Add `Exon` to your `mix.exs` file:
 ```
 defp deps do
   [
-    {:exon, "~> 0.1.7"},
+    {:exon, "~> 0.1.8"},
   ]
 end
 ```
