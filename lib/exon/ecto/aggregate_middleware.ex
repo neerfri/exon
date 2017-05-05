@@ -2,6 +2,15 @@ defmodule Exon.Ecto.AggregateMiddleware do
   use Exon.Middleware
   @private_key :ecto_aggregate
 
+  defmodule MissingAggregareIdError do
+    defexception message: """
+      Command is missing :aggregate_id
+      There are two way to specify :aggregate_id
+      1. Using the @command attribute: `@command aggregate_id: :my_id`
+      2. Using the options for `Exon.AggregateRoot`: `use Exon.AggregateRoot, default_aggregate_id: :my_id`
+      """
+  end
+
   def put_changeset(%Command{private: private} = command, changeset) do
     private = put_in(private, [Access.key(@private_key, %{}), :changeset], changeset)
     %{command | private: private}
@@ -57,8 +66,10 @@ defmodule Exon.Ecto.AggregateMiddleware do
     if spec[:new] do
       struct(aggregate_module)
     else
-      aggregate_module.get(payload[spec[:aggregate_id]])
-      |> repo.one()
+      unless spec[:aggregate_id], do: raise(MissingAggregareIdError)
+      id = payload[spec[:aggregate_id]]
+      query = aggregate_module.get(id)
+      if spec[:allow_nil], do: repo.one(query), else: repo.one!(query)
     end
   end
 end
