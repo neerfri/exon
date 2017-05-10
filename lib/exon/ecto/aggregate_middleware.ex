@@ -24,9 +24,8 @@ defmodule Exon.Ecto.AggregateMiddleware do
     get_in(private, [Access.key(@private_key, %{}), :action])
   end
 
-  def put_delete(%Command{private: private} = command, _aggregate) do
-    private = put_in(private, [Access.key(@private_key, %{}), :action], :delete)
-    %{command | private: private}
+  def put_delete(%Command{aggregate: aggregate} = command) do
+    put_changeset(command, %{Ecto.Changeset.change(aggregate) | action: :delete})
   end
 
   def init(opts) do
@@ -45,14 +44,12 @@ defmodule Exon.Ecto.AggregateMiddleware do
   def after_dispatch(%Command{module: module} = command, %{repo: repo}) do
     if ecto_aggregate?(module) do
       case get_changeset(command) do
+        %Ecto.Changeset{action: :delete} ->
+          perform_delete(command, repo)
         %Ecto.Changeset{} = changeset ->
           perform_insert_or_update(command, changeset, repo)
         _ ->
-          case get_action(command) do
-            :delete ->
-              perform_delete(command, repo)
-            _ -> command
-          end
+          command
       end
     else
       command
