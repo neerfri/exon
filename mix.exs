@@ -3,7 +3,7 @@ defmodule Exon.Mixfile do
 
   def project do
     [app: :exon,
-     version: "0.1.9",
+     version: extract_version_from_readme!(),
      elixir: "~> 1.4",
      elixirc_paths: elixirc_paths(Mix.env),
      build_embedded: Mix.env == :prod,
@@ -65,4 +65,19 @@ defmodule Exon.Mixfile do
   # Specifies which paths to compile per environment.
   defp elixirc_paths(:test), do: ["lib", "test/support"]
   defp elixirc_paths(_),     do: ["lib"]
+
+  defp extract_version_from_readme! do
+    Path.join(__DIR__, "README.md")
+    |> File.stream!()
+    |> Enum.find_value(fn(line) ->
+      case Regex.run(~r/{:exon, "~> ([^"]*)"}/, line) do
+        [_, version] -> version
+        nil -> nil
+      end
+    end)
+    |> case do
+      nil -> raise "Could not extract version from README"
+      version -> version
+    end
+  end
 end
