@@ -20,10 +20,6 @@ defmodule Exon.Ecto.AggregateMiddleware do
     get_in(private, [Access.key(@private_key, %{}), :changeset])
   end
 
-  def get_action(%Command{private: private}) do
-    get_in(private, [Access.key(@private_key, %{}), :action])
-  end
-
   def put_delete(%Command{aggregate: aggregate} = command) do
     put_changeset(command, %{Ecto.Changeset.change(aggregate) | action: :delete})
   end

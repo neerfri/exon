@@ -6,7 +6,7 @@ defmodule TodoApp.TodoList do
   alias Exon.Command
 
   import Ecto.Changeset
-  import Exon.Ecto.AggregateMiddleware, only: [put_changeset: 2]
+  import Exon.Ecto.AggregateMiddleware, only: [put_changeset: 2, put_delete: 1]
   import Exon.EventBus.Middleware, only: [put_event: 2]
   import Exon.Command, only: [put_result: 2]
 
@@ -33,6 +33,12 @@ defmodule TodoApp.TodoList do
     command
     |> put_changeset(change(list, %{archived: true}))
     |> put_event(todo_list_archived: %{list_uuid: list.uuid})
+  end
+
+  @command []
+  def delete_todo_list(%Command{aggregate: list} = command) do
+    command
+    |> put_delete()
   end
 
   @command []
