@@ -17,11 +17,15 @@ defmodule Exon.EventBus.Middleware do
     %{event_bus: Keyword.fetch!(opts, :event_bus)}
   end
 
-  def after_dispatch(%Command{context: context} = command, %{event_bus: event_bus}) do
+  def after_dispatch(%Command{context: context, result: result} = command, %{event_bus: event_bus}) do
     events = get_events(command)
-    if events do
+    if events && !error_result?(result) do
       event_bus.publish(events, context)
     end
     command
+  end
+
+  defp error_result?(result) do
+    is_tuple(result) && elem(result, 0) == :error
   end
 end
